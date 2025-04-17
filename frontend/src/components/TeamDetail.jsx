@@ -1,69 +1,161 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 
-export default function TeamDetail({ team }) {
+export default function TeamDetail({ team, onSelectMember, selectedMember }) {
   const [members, setMembers] = useState([]);
   const [newMember, setNewMember] = useState("");
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchMembers();
+    if (team?.id) {
+      fetchMembers();
+    }
   }, [team]);
 
   const fetchMembers = async () => {
-    const res = await axios.get(`http://localhost:3001/api/members/team/${team.id}`);
-    setMembers(res.data);
+    try {
+      setLoading(true);
+      const res = await axios.get(`http://localhost:3001/api/members/team/${team.id}`);
+      setMembers(res.data);
+    } catch (error) {
+      console.error("Failed to fetch members:", error);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleAddMember = async () => {
+  const handleAddMember = async (e) => {
+    e.preventDefault();
     if (!newMember.trim()) return;
-    await axios.post("http://localhost:3001/api/members", {
-      name: newMember,
-      team_id: team.id,
-    });
-    setNewMember("");
-    fetchMembers();
+    
+    try {
+      await axios.post("http://localhost:3001/api/members", {
+        name: newMember,
+        team_id: team.id,
+      });
+      setNewMember("");
+      fetchMembers();
+    } catch (error) {
+      console.error("Failed to add member:", error);
+    }
   };
 
   const handleDeleteMember = async (id) => {
-    await axios.delete(`http://localhost:3001/api/members/${id}`);
-    fetchMembers();
+    try {
+      if (selectedMember?.id === id) {
+        onSelectMember(null);
+      }
+      await axios.delete(`http://localhost:3001/api/members/${id}`);
+      fetchMembers();
+    } catch (error) {
+      console.error("Failed to delete member:", error);
+    }
   };
 
   return (
-    <div>
-      <h2 className="text-xl font-bold mb-4">{team.name}</h2>
+    <div className="animate-fade-in">
+      {/* Team Header */}
+      <div className="flex justify-between items-center mb-6">
+        <div>
+          <h2 className="text-xl font-bold">{team.name}</h2>
+          <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+            Quản lý thành viên và công việc
+          </p>
+        </div>
+        <div className="badge-blue">
+          {members.length} thành viên
+        </div>
+      </div>
 
-      <ul className="space-y-2 mb-4">
-        {members.map((member) => (
-          <li
-            key={member.id}
-            className="flex justify-between items-center bg-white dark:bg-gray-700 px-3 py-2 rounded shadow"
+      {/* Add Member Form */}
+      <form onSubmit={handleAddMember} className="mb-6">
+        <div className="flex gap-2">
+          <input
+            type="text"
+            value={newMember}
+            onChange={(e) => setNewMember(e.target.value)}
+            placeholder="Thêm thành viên mới"
+            className="input flex-1"
+          />
+          <button
+            type="submit"
+            className="btn-primary"
+            aria-label="Thêm thành viên mới"
           >
-            <span>{member.name}</span>
-            <button
-              onClick={() => handleDeleteMember(member.id)}
-              className="text-red-500 hover:text-red-700"
+            <svg 
+              className="w-5 h-5" 
+              fill="none" 
+              viewBox="0 0 24 24" 
+              stroke="currentColor"
+              aria-hidden="true"
             >
-              &times;
-            </button>
-          </li>
-        ))}
-      </ul>
+              <title>Add member</title>
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+            <span>Thêm</span>
+          </button>
+        </div>
+      </form>
 
-      <div className="flex gap-2">
-        <input
-          type="text"
-          value={newMember}
-          onChange={(e) => setNewMember(e.target.value)}
-          placeholder="Thêm thành viên"
-          className="flex-1 px-2 py-1 rounded border dark:bg-gray-800 dark:border-gray-600"
-        />
-        <button
-          onClick={handleAddMember}
-          className="bg-green-500 hover:bg-green-600 text-white px-3 py-1 rounded"
-        >
-          Thêm
-        </button>
+      {/* Members List */}
+      <div>
+        <h3 className="font-semibold text-gray-500 dark:text-gray-400 mb-3">
+          Danh sách thành viên
+        </h3>
+        
+        <div className="space-y-2 max-h-[400px] overflow-y-auto pr-2">
+          {loading ? (
+            <div className="flex items-center justify-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500" role="status" aria-label="Loading..." />
+            </div>
+          ) : members.length === 0 ? (
+            <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+              Chưa có thành viên nào
+            </div>
+          ) : (
+            members.map((member) => (
+              <button
+                key={member.id}
+                onClick={() => onSelectMember(member)}
+                type="button"
+                className={`flex justify-between items-center w-full p-4 rounded-lg transition-all duration-200 ${
+                  selectedMember?.id === member.id
+                    ? "bg-blue-50 dark:bg-blue-900 border-2 border-blue-500"
+                    : "bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600"
+                }`}
+                aria-label={`Select member ${member.name}`}
+                aria-pressed={selectedMember?.id === member.id}
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white">
+                    {member.name.charAt(0).toUpperCase()}
+                  </div>
+                  <span className="font-medium">{member.name}</span>
+                </div>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDeleteMember(member.id);
+                  }}
+                  className="text-gray-400 hover:text-red-500 transition-colors duration-200"
+                  type="button"
+                  aria-label={`Delete member ${member.name}`}
+                >
+                  <svg 
+                    className="w-5 h-5" 
+                    fill="none" 
+                    viewBox="0 0 24 24" 
+                    stroke="currentColor"
+                    aria-hidden="true"
+                  >
+                    <title>Delete member</title>
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                  </svg>
+                </button>
+              </button>
+            ))
+          )}
+        </div>
       </div>
     </div>
   );

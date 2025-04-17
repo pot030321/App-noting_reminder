@@ -1,40 +1,64 @@
 const express = require("express");
 const router = express.Router();
-const db = require("../db");
+const getDb = require("../db");
 
-// GET all tasks by member_id
+// GET all tasks for a member
 router.get("/member/:memberId", async (req, res) => {
-  const { memberId } = req.params;
-  const [rows] = await db.query("SELECT * FROM tasks WHERE member_id = ?", [memberId]);
-  res.json(rows);
+  try {
+    const { memberId } = req.params;
+    const db = await getDb();
+    const tasks = await db.all("SELECT * FROM tasks WHERE member_id = ?", [memberId]);
+    res.json(tasks);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Failed to get tasks" });
+  }
 });
 
 // POST new task
 router.post("/", async (req, res) => {
-  const { description, deadline, status, member_id } = req.body;
-  await db.query(
-    "INSERT INTO tasks (description, deadline, status, member_id) VALUES (?, ?, ?, ?)",
-    [description, deadline, status, member_id]
-  );
-  res.sendStatus(201);
+  try {
+    const { description, deadline, status, member_id } = req.body;
+    const db = await getDb();
+    const result = await db.run(
+      "INSERT INTO tasks (description, deadline, status, member_id) VALUES (?, ?, ?, ?)",
+      [description, deadline, status || "doing", member_id]
+    );
+    res.status(201).json({ id: result.lastID });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Failed to create task" });
+  }
 });
 
-// UPDATE task status or content
+// PUT update task status
 router.put("/:id", async (req, res) => {
-  const { id } = req.params;
-  const { description, deadline, status } = req.body;
-  await db.query(
-    "UPDATE tasks SET description = ?, deadline = ?, status = ? WHERE id = ?",
-    [description, deadline, status, id]
-  );
-  res.sendStatus(200);
+  try {
+    const { id } = req.params;
+    const { description, deadline, status } = req.body;
+    const db = await getDb();
+    await db.run(
+      "UPDATE tasks SET description = ?, deadline = ?, status = ? WHERE id = ?",
+      [description, deadline, status, id]
+    );
+    res.sendStatus(204);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Failed to update task" });
+  }
 });
 
-// DELETE task
+// DELETE a task
 router.delete("/:id", async (req, res) => {
-  const { id } = req.params;
-  await db.query("DELETE FROM tasks WHERE id = ?", [id]);
-  res.sendStatus(204);
+  try {
+    const { id } = req.params;
+    const db = await getDb();
+    await db.run("DELETE FROM tasks WHERE id = ?", [id]);
+    res.sendStatus(204);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Failed to delete task" });
+  }
 });
 
 module.exports = router;
