@@ -5,6 +5,7 @@ export default function TeamDetail({ team, onSelectMember, selectedMember }) {
   const [members, setMembers] = useState([]);
   const [newMember, setNewMember] = useState("");
   const [loading, setLoading] = useState(true);
+  const [newPhone, setNewPhone] = useState("");
 
   useEffect(() => {
     if (team?.id) {
@@ -32,9 +33,11 @@ export default function TeamDetail({ team, onSelectMember, selectedMember }) {
       await axios.post("http://localhost:3001/api/members", {
         name: newMember,
         team_id: team.id,
+        phone: newPhone
       });
       setNewMember("");
       fetchMembers();
+      setNewPhone("");
     } catch (error) {
       console.error("Failed to add member:", error);
     }
@@ -69,33 +72,43 @@ export default function TeamDetail({ team, onSelectMember, selectedMember }) {
 
       {/* Add Member Form */}
       <form onSubmit={handleAddMember} className="mb-6">
-        <div className="flex gap-2">
-          <input
-            type="text"
-            value={newMember}
-            onChange={(e) => setNewMember(e.target.value)}
-            placeholder="Thêm thành viên mới"
-            className="input flex-1"
-          />
-          <button
-            type="submit"
-            className="btn-primary"
-            aria-label="Thêm thành viên mới"
-          >
-            <svg 
-              className="w-5 h-5" 
-              fill="none" 
-              viewBox="0 0 24 24" 
-              stroke="currentColor"
-              aria-hidden="true"
-            >
-              <title>Add member</title>
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-            </svg>
-            <span>Thêm</span>
-          </button>
-        </div>
-      </form>
+  <div className="flex gap-2">
+    <input
+      type="text"
+      value={newMember}
+      onChange={(e) => setNewMember(e.target.value)}
+      placeholder="Tên thành viên"
+      className="input flex-1"
+    />
+
+    <input
+      type="tel"
+      value={newPhone}
+      onChange={(e) => setNewPhone(e.target.value)}
+      placeholder="Số điện thoại"
+      className="input w-40"
+    />
+
+    <button type="submit" className="btn-primary" aria-label="Thêm thành viên">
+      <svg
+        className="w-5 h-5"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+        aria-hidden="true"
+      >
+        <title>Add member</title>
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={2}
+          d="M12 4v16m8-8H4"
+        />
+      </svg>
+      <span>Thêm</span>
+    </button>
+  </div>
+</form>
 
       {/* Members List */}
       <div>

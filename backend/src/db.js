@@ -1,46 +1,54 @@
-const sqlite3 = require('sqlite3').verbose();
-const { open } = require('sqlite');
-const path = require('node:path');
+const mysql = require('mysql2/promise');
+require('dotenv').config();
 
-// Create database connection
+let pool;
+
 async function getDb() {
-  if (!global.db) {
-    global.db = await open({
-      filename: path.join(__dirname, '../database.sqlite'),
-      driver: sqlite3.Database
+  if (!pool) {
+    pool = await mysql.createPool({
+      host: process.env.DB_HOST,
+      user: process.env.DB_USER,
+      password: process.env.DB_PASSWORD,
+      database: process.env.DB_NAME,
+      waitForConnections: true,
+      connectionLimit: 10,
+      queueLimit: 0
     });
 
-    // Enable foreign keys
-    await global.db.run('PRAGMA foreign_keys = ON');
-
-    // Create tables if they don't exist
-    await global.db.exec(`
+    // Tạo bảng nếu chưa có
+    await pool.query(`
       CREATE TABLE IF NOT EXISTS teams (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT NOT NULL,
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        name VARCHAR(255) NOT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-      );
+      )
+    `);
 
+    await pool.query(`
       CREATE TABLE IF NOT EXISTS members (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT NOT NULL,
-        team_id INTEGER,
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        name VARCHAR(255) NOT NULL,
+        team_id INT,
+        phone VARCHAR(20),
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (team_id) REFERENCES teams(id) ON DELETE CASCADE
-      );
+      )
+    `);
 
+    await pool.query(`
       CREATE TABLE IF NOT EXISTS tasks (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        id INT AUTO_INCREMENT PRIMARY KEY,
         description TEXT NOT NULL,
         deadline DATE,
-        status TEXT CHECK(status IN ('doing', 'done')) DEFAULT 'doing',
-        member_id INTEGER,
+        status ENUM('doing', 'done') DEFAULT 'doing',
+        member_id INT,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (member_id) REFERENCES members(id) ON DELETE CASCADE
-      );
+      )
     `);
   }
-  return global.db;
+
+  return pool;
 }
 
 module.exports = getDb;

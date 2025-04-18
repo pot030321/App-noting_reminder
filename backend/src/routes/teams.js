@@ -6,7 +6,7 @@ const getDb = require("../db");
 router.get("/", async (req, res) => {
   try {
     const db = await getDb();
-    const teams = await db.all("SELECT * FROM teams");
+    const [teams] = await db.query("SELECT * FROM teams");
     res.json(teams);
   } catch (error) {
     console.error(error);
@@ -19,7 +19,7 @@ router.post("/", async (req, res) => {
   try {
     const { name } = req.body;
     const db = await getDb();
-    const result = await db.run("INSERT INTO teams (name) VALUES (?)", [name]);
+    const [result] = await db.query("INSERT INTO teams (name) VALUES (?)", [name]);
     res.status(201).json({ id: result.lastID });
   } catch (error) {
     console.error(error);
@@ -32,7 +32,7 @@ router.delete("/:id", async (req, res) => {
   try {
     const { id } = req.params;
     const db = await getDb();
-    await db.run("DELETE FROM teams WHERE id = ?", [id]);
+    await db.query("DELETE FROM teams WHERE id = ?", [id]);
     res.sendStatus(204);
   } catch (error) {
     console.error(error);

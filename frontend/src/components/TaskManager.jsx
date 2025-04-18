@@ -3,9 +3,10 @@ import axios from "axios";
 
 export default function TaskManager({ memberId }) {
   const [tasks, setTasks] = useState([]);
+  const [memberInfo, setMemberInfo] = useState(null);
   const [newTask, setNewTask] = useState("");
   const [newDeadline, setNewDeadline] = useState("");
-  const [filter, setFilter] = useState("all"); // all, doing, done
+  const [filter, setFilter] = useState("all");
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -18,7 +19,8 @@ export default function TaskManager({ memberId }) {
     try {
       setLoading(true);
       const res = await axios.get(`http://localhost:3001/api/tasks/member/${memberId}`);
-      setTasks(res.data);
+      setTasks(res.data.tasks);
+      setMemberInfo(res.data.member);
     } catch (error) {
       console.error("Failed to fetch tasks:", error);
     } finally {
@@ -29,7 +31,6 @@ export default function TaskManager({ memberId }) {
   const addTask = async (e) => {
     e.preventDefault();
     if (!newTask.trim()) return;
-
     try {
       await axios.post("http://localhost:3001/api/tasks", {
         description: newTask,
@@ -73,15 +74,24 @@ export default function TaskManager({ memberId }) {
 
   const formatDate = (date) => {
     if (!date) return null;
-    return new Date(date).toLocaleDateString('vi-VN', { 
-      year: 'numeric', 
-      month: 'short', 
-      day: 'numeric' 
+    return new Date(date).toLocaleDateString("vi-VN", {
+      year: "numeric",
+      month: "short",
+      day: "numeric"
     });
   };
 
   return (
     <div className="space-y-6 animate-fade-in">
+      {/* Member Info */}
+      {memberInfo && (
+        <div className="card">
+          <h3 className="font-semibold mb-2">Thông tin thành viên</h3>
+          <p><strong>Tên:</strong> {memberInfo.name}</p>
+          <p><strong>Số điện thoại:</strong> {memberInfo.phone || "Chưa có"}</p>
+        </div>
+      )}
+
       {/* Add Task Form */}
       <div className="card">
         <h3 className="font-semibold mb-4">Thêm công việc mới</h3>
@@ -111,7 +121,6 @@ export default function TaskManager({ memberId }) {
                 fill="none" 
                 viewBox="0 0 24 24" 
                 stroke="currentColor"
-                aria-hidden="true"
               >
                 <title>Add task</title>
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -127,40 +136,30 @@ export default function TaskManager({ memberId }) {
         <div className="flex justify-between items-center mb-4">
           <h3 className="font-semibold">Danh sách công việc</h3>
           <div className="flex gap-2">
-            <button
-              type="button"
-              onClick={() => setFilter("all")}
-              className={`badge ${
-                filter === "all" ? "badge-blue" : "bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400"
-              }`}
-            >
-              Tất cả ({tasks.length})
-            </button>
-            <button
-              type="button"
-              onClick={() => setFilter("doing")}
-              className={`badge ${
-                filter === "doing" ? "badge-yellow" : "bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400"
-              }`}
-            >
-              Đang làm ({tasks.filter(t => t.status === "doing").length})
-            </button>
-            <button
-              type="button"
-              onClick={() => setFilter("done")}
-              className={`badge ${
-                filter === "done" ? "badge-green" : "bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400"
-              }`}
-            >
-              Hoàn thành ({tasks.filter(t => t.status === "done").length})
-            </button>
+            {["all", "doing", "done"].map(status => (
+              <button
+                key={status}
+                type="button"
+                onClick={() => setFilter(status)}
+                className={`badge ${
+                  filter === status
+                    ? status === "doing" ? "badge-yellow"
+                    : status === "done" ? "badge-green"
+                    : "badge-blue"
+                    : "bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400"
+                }`}
+              >
+                {status === "all" ? "Tất cả" : status === "doing" ? "Đang làm" : "Hoàn thành"} (
+                {status === "all" ? tasks.length : tasks.filter(t => t.status === status).length})
+              </button>
+            ))}
           </div>
         </div>
 
         <div className="space-y-2">
           {loading ? (
             <div className="flex items-center justify-center py-8">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500" role="status" aria-label="Loading..." />
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500" />
             </div>
           ) : filteredTasks.length === 0 ? (
             <div className="text-center py-8 text-gray-500 dark:text-gray-400">
@@ -178,11 +177,7 @@ export default function TaskManager({ memberId }) {
                       {task.description}
                     </p>
                     <div className="flex items-center gap-2 text-sm">
-                      <span 
-                        className={`badge ${
-                          task.status === "done" ? "badge-green" : "badge-yellow"
-                        }`}
-                      >
+                      <span className={`badge ${task.status === "done" ? "badge-green" : "badge-yellow"}`}>
                         {task.status === "done" ? "Hoàn thành" : "Đang làm"}
                       </span>
                       {task.deadline && (
@@ -200,17 +195,14 @@ export default function TaskManager({ memberId }) {
                           ? "text-yellow-600 hover:bg-yellow-100 dark:hover:bg-yellow-900"
                           : "text-green-600 hover:bg-green-100 dark:hover:bg-green-900"
                       }`}
-                      aria-label={task.status === "done" ? "Mark as doing" : "Mark as done"}
-                      type="button"
+                      aria-label="Toggle status"
                     >
                       {task.status === "done" ? (
                         <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <title>Mark as doing</title>
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                         </svg>
                       ) : (
                         <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <title>Mark as done</title>
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                         </svg>
                       )}
@@ -218,11 +210,9 @@ export default function TaskManager({ memberId }) {
                     <button
                       onClick={() => deleteTask(task.id)}
                       className="p-1.5 text-red-500 hover:bg-red-100 dark:hover:bg-red-900 rounded-full transition-colors duration-200"
-                      aria-label={`Delete task ${task.description}`}
-                      type="button"
+                      aria-label="Delete task"
                     >
                       <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <title>Delete task</title>
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                       </svg>
                     </button>
