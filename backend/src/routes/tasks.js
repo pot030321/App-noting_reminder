@@ -9,10 +9,10 @@ router.get("/member/:memberId", async (req, res) => {
     const db = await getDb();
 
     const [tasks] = await db.query("SELECT * FROM tasks WHERE member_id = ?", [memberId]);
-    const [memberRows] = await db.query("SELECT name, phone FROM members WHERE id = ?", [memberId]);
+    const [memberRows] = await db.query("SELECT name, phone, email FROM members WHERE id = ?", [memberId]);
     const member = memberRows[0] || null;
 
-    res.json({ tasks, member }); // ✅ gửi đúng format frontend cần
+    res.json({ tasks, member });
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "Failed to get tasks and member" });
@@ -22,13 +22,17 @@ router.get("/member/:memberId", async (req, res) => {
 // POST new task
 router.post("/", async (req, res) => {
   try {
-    const { description, deadline, status, member_id } = req.body;
+    const { description, deadline, deadlineTime, notificationTime, status, member_id } = req.body;
     const db = await getDb();
+    
+    // Combine date and time
+    const deadlineDateTime = `${deadline}T${deadlineTime}`;
+    
     const [result] = await db.query(
-      "INSERT INTO tasks (description, deadline, status, member_id) VALUES (?, ?, ?, ?)",
-      [description, deadline, status || "doing", member_id]
+      "INSERT INTO tasks (description, deadline, notification_time, status, member_id) VALUES (?, ?, ?, ?, ?)",
+      [description, deadlineDateTime, notificationTime, status || "doing", member_id]
     );
-    res.status(201).json({ id: result.insertId }); // dùng insertId trong MySQL
+    res.status(201).json({ id: result.insertId });
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "Failed to create task" });

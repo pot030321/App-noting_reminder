@@ -20,13 +20,19 @@ export default function TaskManager({ memberId }) {
       setLoading(true);
       const res = await axios.get(`http://localhost:3001/api/tasks/member/${memberId}`);
       setTasks(res.data.tasks);
-      setMemberInfo(res.data.member);
+      setMemberInfo({
+        ...res.data.member,
+        notification_enabled: res.data.member.notification_enabled ?? true
+      });
     } catch (error) {
       console.error("Failed to fetch tasks:", error);
     } finally {
       setLoading(false);
     }
   };
+
+  const [newDeadlineTime, setNewDeadlineTime] = useState("09:00");
+  const [notificationTime, setNotificationTime] = useState(30);
 
   const addTask = async (e) => {
     e.preventDefault();
@@ -35,11 +41,14 @@ export default function TaskManager({ memberId }) {
       await axios.post("http://localhost:3001/api/tasks", {
         description: newTask,
         deadline: newDeadline,
+        deadlineTime: newDeadlineTime,
+        notificationTime: notificationTime,
         status: "doing",
         member_id: memberId,
       });
       setNewTask("");
       setNewDeadline("");
+      setNewDeadlineTime("09:00");
       fetchTasks();
     } catch (error) {
       console.error("Failed to add task:", error);
@@ -84,11 +93,19 @@ export default function TaskManager({ memberId }) {
   return (
     <div className="space-y-6 animate-fade-in">
       {/* Member Info */}
+      {/* Member Info section update */}
       {memberInfo && (
         <div className="card">
           <h3 className="font-semibold mb-2">Thông tin thành viên</h3>
           <p><strong>Tên:</strong> {memberInfo.name}</p>
           <p><strong>Số điện thoại:</strong> {memberInfo.phone || "Chưa có"}</p>
+          <p><strong>Email:</strong> {memberInfo.email || "Chưa có"}</p>
+          <p>
+            <strong>Trạng thái thông báo:</strong>{" "}
+            <span className={`badge ${memberInfo.notification_enabled ? 'badge-green' : 'badge-yellow'}`}>
+              {memberInfo.notification_enabled ? "Đã bật" : "Đã tắt"}
+            </span>
+          </p>
         </div>
       )}
 
@@ -101,33 +118,37 @@ export default function TaskManager({ memberId }) {
             placeholder="Mô tả công việc"
             value={newTask}
             onChange={(e) => setNewTask(e.target.value)}
-            className="input"
+            className="input w-full"
           />
           <div className="flex gap-2">
             <input
               type="date"
               value={newDeadline}
               onChange={(e) => setNewDeadline(e.target.value)}
-              className="input"
+              className="input flex-1"
               min={new Date().toISOString().split('T')[0]}
             />
-            <button
-              type="submit"
-              className="btn-primary whitespace-nowrap"
-              disabled={!newTask.trim()}
+            <input
+              type="time"
+              value={newDeadlineTime}
+              onChange={(e) => setNewDeadlineTime(e.target.value)}
+              className="input w-32"
+            />
+            <select
+              value={notificationTime}
+              onChange={(e) => setNotificationTime(Number(e.target.value))}
+              className="input w-48"
             >
-              <svg 
-                className="w-5 h-5" 
-                fill="none" 
-                viewBox="0 0 24 24" 
-                stroke="currentColor"
-              >
-                <title>Add task</title>
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-              </svg>
-              <span>Thêm</span>
-            </button>
+              <option value={15}>Thông báo trước 15 phút</option>
+              <option value={30}>Thông báo trước 30 phút</option>
+              <option value={60}>Thông báo trước 1 giờ</option>
+              <option value={120}>Thông báo trước 2 giờ</option>
+              <option value={1440}>Thông báo trước 1 ngày</option>
+            </select>
           </div>
+          <button type="submit" className="btn-primary" disabled={!newTask.trim()}>
+            Thêm công việc
+          </button>
         </form>
       </div>
 

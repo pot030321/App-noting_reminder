@@ -2,10 +2,12 @@ import React, { useState } from "react";
 import Sidebar from "./components/Sidebar";
 import TeamDetail from "./components/TeamDetail";
 import TaskManager from "./components/TaskManager";
+import NotificationSettings from "./components/NotificationSettings";
 
 export default function App() {
   const [selectedTeam, setSelectedTeam] = useState(null);
   const [selectedMember, setSelectedMember] = useState(null);
+  const [showNotificationSettings, setShowNotificationSettings] = useState(false);
 
   const handleTeamSelect = (team) => {
     setSelectedTeam(team);
@@ -39,6 +41,13 @@ export default function App() {
                       Công việc của {selectedMember.name}
                     </h2>
                     <TaskManager memberId={selectedMember.id} />
+                    
+                    {showNotificationSettings && (
+                      <NotificationSettings
+                        member={selectedMember}
+                        onClose={() => setShowNotificationSettings(false)}
+                      />
+                    )}
                   </div>
                 ) : (
                   <div className="flex items-center justify-center h-full text-gray-500 dark:text-gray-400 py-12">
