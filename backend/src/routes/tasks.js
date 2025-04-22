@@ -22,15 +22,15 @@ router.get("/member/:memberId", async (req, res) => {
 // POST new task
 router.post("/", async (req, res) => {
   try {
-    const { description, deadline, deadlineTime, notificationTime, status, member_id } = req.body;
+    const { description, deadline, deadlineTime, notificationTime, status, member_id, companyBranch } = req.body;
     const db = await getDb();
     
     // Combine date and time
     const deadlineDateTime = `${deadline}T${deadlineTime}`;
     
     const [result] = await db.query(
-      "INSERT INTO tasks (description, deadline, notification_time, status, member_id) VALUES (?, ?, ?, ?, ?)",
-      [description, deadlineDateTime, notificationTime, status || "doing", member_id]
+      "INSERT INTO tasks (description, deadline, notification_time, status, member_id, company_branch) VALUES (?, ?, ?, ?, ?, ?)",
+      [description, deadlineDateTime, notificationTime, status || "doing", member_id, companyBranch]
     );
     res.status(201).json({ id: result.insertId });
   } catch (error) {
@@ -43,7 +43,7 @@ router.post("/", async (req, res) => {
 router.put("/:id", async (req, res) => {
   try {
     const { id } = req.params;
-    let { description, deadline, status } = req.body;
+    let { description, deadline, status, companyBranch } = req.body;
 
     if (deadline) {
       deadline = deadline.split("T")[0]; // Fix format lỗi MySQL
@@ -51,8 +51,8 @@ router.put("/:id", async (req, res) => {
 
     const db = await getDb();
     await db.query(
-      "UPDATE tasks SET description = ?, deadline = ?, status = ? WHERE id = ?",
-      [description, deadline, status, id]
+      "UPDATE tasks SET description = ?, deadline = ?, status = ?, company_branch = ? WHERE id = ?",
+      [description, deadline, status, companyBranch, id]
     );
     res.sendStatus(204);
   } catch (error) {

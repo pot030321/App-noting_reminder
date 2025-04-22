@@ -1,21 +1,12 @@
 const express = require("express");
 const cors = require("cors");
 const app = express();
-const port = 3001;
-// Add this near your other imports
-const cron = require('node-cron');
-const { checkAndSendReminders } = require('./src/services/emailService');
-
-// Add this after your routes
-// Check every minute for testing
-cron.schedule('* * * * *', async () => {
-    console.log('Checking for tasks to notify...');
-    await checkAndSendReminders();
-});
-
 require("dotenv").config();
 const db = require("./src/db");
 const emailService = require('./src/services/emailService');
+// Add cron for scheduling
+const cron = require('node-cron');
+const { checkAndSendReminders } = require('./src/services/emailService');
 
 app.use(cors());
 app.use(express.json());
@@ -24,6 +15,12 @@ app.use(express.json());
 app.use("/api/teams", require("./src/routes/teams"));
 app.use("/api/members", require("./src/routes/members"));
 app.use("/api/tasks", require("./src/routes/tasks"));
+
+// Check every minute for testing
+cron.schedule('* * * * *', async () => {
+    console.log('Checking for tasks to notify...');
+    await checkAndSendReminders();
+});
 
 // Schedule task notifications
 cron.schedule('0 9 * * *', async () => {
@@ -50,6 +47,10 @@ cron.schedule('0 9 * * *', async () => {
   }
 });
 
-app.listen(port, () => {
-  console.log(`✅ Backend running at http://localhost:${port}`);
+// Use a single port declaration
+const PORT = process.env.PORT || 8080; // dùng PORT từ môi trường nếu có
+app.listen(PORT, '0.0.0.0', () => {
+    console.log(`Server is running on http://0.0.0.0:${PORT}`);
 });
+
+

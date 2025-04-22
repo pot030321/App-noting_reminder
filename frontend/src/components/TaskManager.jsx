@@ -8,6 +8,7 @@ export default function TaskManager({ memberId }) {
   const [newDeadline, setNewDeadline] = useState("");
   const [filter, setFilter] = useState("all");
   const [loading, setLoading] = useState(true);
+  const [companyBranch, setCompanyBranch] = useState(""); // New state for company branch
 
   useEffect(() => {
     if (memberId) {
@@ -45,10 +46,12 @@ export default function TaskManager({ memberId }) {
         notificationTime: notificationTime,
         status: "doing",
         member_id: memberId,
+        companyBranch: companyBranch, // Add company branch to the request
       });
       setNewTask("");
       setNewDeadline("");
       setNewDeadlineTime("09:00");
+      setCompanyBranch(""); // Reset company branch field
       fetchTasks();
     } catch (error) {
       console.error("Failed to add task:", error);
@@ -113,13 +116,25 @@ export default function TaskManager({ memberId }) {
       <div className="card">
         <h3 className="font-semibold mb-4">Thêm công việc mới</h3>
         <form onSubmit={addTask} className="space-y-4">
+          {/* New Company Branch field */}
           <input
             type="text"
+            placeholder="Chi nhánh công ty"
+            value={companyBranch}
+            onChange={(e) => setCompanyBranch(e.target.value)}
+            className="input w-full"
+          />
+          
+          {/* Changed from input to textarea for task description */}
+          <textarea
             placeholder="Mô tả công việc"
             value={newTask}
             onChange={(e) => setNewTask(e.target.value)}
             className="input w-full"
+            rows={4}
+            style={{ resize: "vertical" }}
           />
+          
           <div className="flex gap-2">
             <input
               type="date"
@@ -194,6 +209,11 @@ export default function TaskManager({ memberId }) {
               >
                 <div className="flex items-start justify-between">
                   <div className="space-y-1">
+                    {task.companyBranch && (
+                      <p className="text-sm text-blue-600 dark:text-blue-400 font-medium">
+                        {task.companyBranch}
+                      </p>
+                    )}
                     <p className={task.status === "done" ? "line-through text-gray-500" : ""}>
                       {task.description}
                     </p>

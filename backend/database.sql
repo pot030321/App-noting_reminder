@@ -25,6 +25,7 @@ CREATE TABLE IF NOT EXISTS tasks (
   notification_time INT DEFAULT 30,
   status ENUM('doing', 'done') DEFAULT 'doing',
   member_id INT,
+  company_branch VARCHAR(255),
   notification_sent BOOLEAN DEFAULT false,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (member_id) REFERENCES members(id) ON DELETE CASCADE

@@ -1,0 +1,16 @@
+app = "team-backend"
+primary_region = "sin"
+
+[build]
+  dockerfile = "Dockerfile"
+
+[env]
+  DATABASE_URL = "mysql://root:<YOUR_PASS>@aws-us-east-1.psdb.cloud/team_manager?ssl={\"rejectUnauthorized\":true}"
+
+[[services]]
+  internal_port = 8080
+  protocol = "tcp"
+
+  [[services.ports]]
+    handlers = ["http"]
+    port = 80
